@@ -1,0 +1,12 @@
+node_modules
+dist
+target
+*.log
+.DS_Store
+.git
+.idea
+.vscode
+*.swp
+*.swo
+npm-debug.log
+yarn-error.log

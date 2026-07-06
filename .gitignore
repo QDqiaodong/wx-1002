@@ -1,0 +1,44 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Logs / temp
+*.log
+logs/
+tmp/
+temp/
+
+# Environment
+.env
+!.env.example
+
+# Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+npm-debug.log*
+yarn-error.log*
+
+# Backend
+target/
+backend/target/
+
+# Docker local overrides / volumes
+docker-compose.override.yml
+data/
+mysql-data/
+redis-data/
+
+# Keep build and delivery entrypoints trackable
+!pom.xml
+!backend/pom.xml
+!build.gradle
+!settings.gradle
+!docker-compose.yml
+!Dockerfile
+!backend/Dockerfile
+!frontend/Dockerfile
+!README.md
