@@ -17,7 +17,12 @@
         <template #default="scope">
           <span class="tree-node">
             <span>{{ scope.node.label }}</span>
-            <span class="umbrella-count">{{ scope.node.umbrellaCount || 0 }}台</span>
+            <span v-if="scope.node.capacity" class="capacity-info">
+              <span :class="['capacity-count', scope.node.remainingCapacity != null && scope.node.remainingCapacity <= 0 ? 'warning' : '']">
+                {{ scope.node.umbrellaCount || 0 }}/{{ scope.node.capacity }}
+              </span>
+            </span>
+            <span v-else class="umbrella-count">{{ scope.node.umbrellaCount || 0 }}台</span>
           </span>
         </template>
       </el-tree>
@@ -38,6 +43,15 @@
             <el-tag :type="selectedZone.status === 'active' ? 'success' : 'warning'">
               {{ selectedZone.status === 'active' ? '启用' : '禁用' }}
             </el-tag>
+          </el-form-item>
+          <el-form-item label="容量上限">
+            {{ selectedZone.capacity || '-' }}
+          </el-form-item>
+          <el-form-item label="已占用/剩余">
+            <span v-if="selectedZone.capacity">
+              {{ selectedZone.umbrellaCount || 0 }} / {{ selectedZone.remainingCapacity != null ? selectedZone.remainingCapacity : '-' }}
+            </span>
+            <span v-else class="text-gray">-</span>
           </el-form-item>
           <el-form-item label="备注">
             {{ selectedZone.remarks || '-' }}
@@ -70,6 +84,9 @@
             <el-option label="禁用" value="inactive" />
           </el-select>
         </el-form-item>
+        <el-form-item label="容量上限">
+          <el-input-number v-model="form.capacity" :min="0" placeholder="不限制请留空" />
+        </el-form-item>
         <el-form-item label="备注">
           <el-textarea v-model="form.remarks" rows="3" />
         </el-form-item>
@@ -97,7 +114,8 @@ const form = ref({
   level: 1,
   sortOrder: 0,
   status: 'active',
-  remarks: ''
+  remarks: '',
+  capacity: null
 })
 
 const treeProps = {
@@ -139,7 +157,8 @@ const openAddModal = () => {
     level: 1,
     sortOrder: 0,
     status: 'active',
-    remarks: ''
+    remarks: '',
+    capacity: null
   }
   modalVisible.value = true
 }
@@ -211,6 +230,25 @@ onMounted(() => {
   background: #f5f5f5;
   padding: 2px 8px;
   border-radius: 10px;
+}
+
+.capacity-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.capacity-count {
+  color: #666;
+  font-size: 12px;
+  background: #f0f9ff;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.capacity-count.warning {
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .zone-detail {

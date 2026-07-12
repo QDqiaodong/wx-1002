@@ -34,6 +34,9 @@ public class Zone {
     @Column(name = "remarks", length = 200)
     private String remarks;
     
+    @Column(name = "capacity")
+    private Integer capacity;
+    
     @Column(name = "created_at")
     private java.util.Date createdAt;
     

@@ -71,9 +71,15 @@
     <el-dialog title="分配片区" :visible.sync="assignModalVisible" width="400px">
       <el-form :model="assignForm" label-width="80px">
         <el-form-item label="目标片区">
-          <el-select v-model="assignForm.zoneId" placeholder="请选择片区" required>
-            <el-option v-for="zone in zones" :key="zone.id" :label="zone.zoneName" :value="zone.id" />
+          <el-select v-model="assignForm.zoneId" placeholder="请选择片区" required @change="handleAssignZoneChange">
+            <el-option v-for="zone in zones" :key="zone.id" :label="zone.capacity ? zone.zoneName + ' (' + (zone.umbrellaCount || 0) + '/' + zone.capacity + ')' : zone.zoneName" :value="zone.id" />
           </el-select>
+        </el-form-item>
+        <el-form-item v-if="assignZoneInfo">
+          <div v-if="assignZoneInfo.capacity" class="capacity-info">
+            已占用: {{ assignZoneInfo.umbrellaCount || 0 }} | 剩余: {{ assignZoneInfo.remainingCapacity }} | 上限: {{ assignZoneInfo.capacity }}
+          </div>
+          <div v-else>无容量限制</div>
         </el-form-item>
         <el-form-item label="操作人">
           <el-input v-model="assignForm.operator" />
@@ -98,6 +104,7 @@ const umbrellas = ref([])
 const zones = ref([])
 const modalVisible = ref(false)
 const assignModalVisible = ref(false)
+const assignZoneInfo = ref(null)
 const form = ref({
   id: null,
   umbrellaCode: '',
@@ -185,7 +192,23 @@ const openAssignModal = (row) => {
     operator: '',
     changeReason: ''
   }
+  assignZoneInfo.value = null
   assignModalVisible.value = true
+}
+
+const handleAssignZoneChange = (zoneId) => {
+  const zone = zones.value.find(z => z.id === zoneId)
+  if (zone) {
+    assignZoneInfo.value = {
+      id: zone.id,
+      zoneName: zone.zoneName,
+      capacity: zone.capacity,
+      umbrellaCount: zone.umbrellaCount || 0,
+      remainingCapacity: zone.capacity ? zone.capacity - (zone.umbrellaCount || 0) : null
+    }
+  } else {
+    assignZoneInfo.value = null
+  }
 }
 
 const submitAssign = async () => {
@@ -224,5 +247,13 @@ onMounted(() => {
 
 .text-gray {
   color: #999;
+}
+
+.capacity-info {
+  font-size: 13px;
+  color: #666;
+  padding: 8px 12px;
+  background: #f0f9ff;
+  border-radius: 4px;
 }
 </style>

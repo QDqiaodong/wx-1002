@@ -34,6 +34,7 @@ public class ZoneServiceImpl implements ZoneService {
         zone.setSortOrder(dto.getSortOrder());
         zone.setStatus(dto.getStatus());
         zone.setRemarks(dto.getRemarks());
+        zone.setCapacity(dto.getCapacity());
         
         if (zone.getParentId() != null) {
             Zone parent = zoneRepository.findById(zone.getParentId())
@@ -56,6 +57,7 @@ public class ZoneServiceImpl implements ZoneService {
         zone.setSortOrder(dto.getSortOrder());
         zone.setStatus(dto.getStatus());
         zone.setRemarks(dto.getRemarks());
+        zone.setCapacity(dto.getCapacity());
         
         Zone saved = zoneRepository.save(zone);
         return convertToDTO(saved);
@@ -90,8 +92,19 @@ public class ZoneServiceImpl implements ZoneService {
     
     @Override
     public List<ZoneDTO> getAllZones() {
+        Map<Long, Long> umbrellaCountMap = umbrellaRepository.findAll().stream()
+                .filter(u -> u.getZoneId() != null)
+                .collect(Collectors.groupingBy(Umbrella::getZoneId, Collectors.counting()));
+        
         return zoneRepository.findAll().stream()
-                .map(this::convertToDTO)
+                .map(z -> {
+                    ZoneDTO dto = convertToDTO(z);
+                    dto.setUmbrellaCount(umbrellaCountMap.getOrDefault(z.getId(), 0L).intValue());
+                    if (z.getCapacity() != null) {
+                        dto.setRemainingCapacity(z.getCapacity() - dto.getUmbrellaCount());
+                    }
+                    return dto;
+                })
                 .collect(Collectors.toList());
     }
     
@@ -117,7 +130,12 @@ public class ZoneServiceImpl implements ZoneService {
     
     private ZoneDTO buildTree(Zone zone, Map<Long, List<Zone>> childrenMap, Map<Long, Long> umbrellaCountMap) {
         ZoneDTO dto = convertToDTO(zone);
-        dto.setUmbrellaCount(umbrellaCountMap.getOrDefault(zone.getId(), 0L).intValue());
+        int count = umbrellaCountMap.getOrDefault(zone.getId(), 0L).intValue();
+        dto.setUmbrellaCount(count);
+        
+        if (zone.getCapacity() != null) {
+            dto.setRemainingCapacity(zone.getCapacity() - count);
+        }
         
         List<Zone> children = childrenMap.getOrDefault(zone.getId(), new ArrayList<>());
         if (!children.isEmpty()) {
@@ -144,6 +162,7 @@ public class ZoneServiceImpl implements ZoneService {
         dto.setSortOrder(zone.getSortOrder());
         dto.setStatus(zone.getStatus());
         dto.setRemarks(zone.getRemarks());
+        dto.setCapacity(zone.getCapacity());
         return dto;
     }
 }

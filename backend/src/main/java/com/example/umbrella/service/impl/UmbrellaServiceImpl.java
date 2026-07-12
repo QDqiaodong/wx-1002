@@ -129,6 +129,16 @@ public class UmbrellaServiceImpl implements UmbrellaService {
         Zone oldZone = umbrella.getZoneId() != null ? zoneService.findById(umbrella.getZoneId()) : null;
         Zone newZone = zoneService.findById(zoneId);
         
+        if (newZone.getCapacity() != null) {
+            long currentCount = umbrellaRepository.findByZoneId(zoneId).size();
+            if (oldZone != null && oldZone.getId().equals(zoneId)) {
+                currentCount--;
+            }
+            if (currentCount >= newZone.getCapacity()) {
+                throw new RuntimeException("目标片区[" + newZone.getZoneName() + "]容量已满，当前已占用: " + currentCount + "，容量上限: " + newZone.getCapacity());
+            }
+        }
+        
         umbrella.setZoneId(zoneId);
         umbrellaRepository.save(umbrella);
         
@@ -139,6 +149,23 @@ public class UmbrellaServiceImpl implements UmbrellaService {
     @Transactional
     public void batchAssignZone(BatchAssignRequest request) {
         Zone newZone = zoneService.findById(request.getZoneId());
+        
+        if (newZone.getCapacity() != null) {
+            long currentCount = umbrellaRepository.findByZoneId(request.getZoneId()).size();
+            
+            int newAssignCount = 0;
+            for (Long umbrellaId : request.getUmbrellaIds()) {
+                Umbrella umbrella = umbrellaRepository.findById(umbrellaId)
+                        .orElseThrow(() -> new RuntimeException("遮阳伞不存在: " + umbrellaId));
+                if (umbrella.getZoneId() == null || !umbrella.getZoneId().equals(request.getZoneId())) {
+                    newAssignCount++;
+                }
+            }
+            
+            if (currentCount + newAssignCount > newZone.getCapacity()) {
+                throw new RuntimeException("目标片区[" + newZone.getZoneName() + "]容量不足，已占用: " + currentCount + "，剩余: " + (newZone.getCapacity() - currentCount) + "，待分配: " + newAssignCount + "，超额: " + (currentCount + newAssignCount - newZone.getCapacity()));
+            }
+        }
         
         for (Long umbrellaId : request.getUmbrellaIds()) {
             Umbrella umbrella = umbrellaRepository.findById(umbrellaId)

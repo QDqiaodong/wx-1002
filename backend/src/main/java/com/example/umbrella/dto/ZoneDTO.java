@@ -14,5 +14,7 @@ public class ZoneDTO {
     private String status;
     private String remarks;
     private Integer umbrellaCount;
+    private Integer capacity;
+    private Integer remainingCapacity;
     private List<ZoneDTO> children;
 }

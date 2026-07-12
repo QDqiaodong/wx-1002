@@ -18,11 +18,16 @@
             default-expand-all
           >
             <template #default="scope">
-              <span class="tree-node">
-                <span>{{ scope.node.label }}</span>
-                <span class="umbrella-count">{{ scope.node.umbrellaCount || 0 }}台</span>
+            <span class="tree-node">
+              <span>{{ scope.node.label }}</span>
+              <span v-if="scope.node.capacity" class="capacity-info">
+                <span :class="['capacity-count', scope.node.remainingCapacity != null && scope.node.remainingCapacity <= 0 ? 'warning' : '']">
+                  {{ scope.node.umbrellaCount || 0 }}/{{ scope.node.capacity }}
+                </span>
               </span>
-            </template>
+              <span v-else class="umbrella-count">{{ scope.node.umbrellaCount || 0 }}台</span>
+            </span>
+          </template>
           </el-tree>
         </div>
         
@@ -57,9 +62,17 @@
         <div class="assign-form">
           <el-form :model="assignForm" inline>
             <el-form-item label="目标片区">
-              <el-select v-model="assignForm.zoneId" placeholder="请选择目标片区" style="width: 200px;">
-                <el-option v-for="zone in zones" :key="zone.id" :label="zone.zoneName" :value="zone.id" />
+              <el-select v-model="assignForm.zoneId" placeholder="请选择目标片区" style="width: 250px;" @change="handleTargetZoneChange">
+                <el-option v-for="zone in zones" :key="zone.id" :label="zone.capacity ? zone.zoneName + ' (' + (zone.umbrellaCount || 0) + '/' + zone.capacity + ')' : zone.zoneName" :value="zone.id" />
               </el-select>
+            </el-form-item>
+            <el-form-item v-if="targetZoneInfo" class="capacity-status">
+              <div class="capacity-detail">
+                <span v-if="targetZoneInfo.capacity">
+                  已占用: {{ targetZoneInfo.umbrellaCount || 0 }} | 剩余: {{ targetZoneInfo.remainingCapacity }} | 上限: {{ targetZoneInfo.capacity }}
+                </span>
+                <span v-else>无容量限制</span>
+              </div>
             </el-form-item>
             <el-form-item label="操作人">
               <el-input v-model="assignForm.operator" placeholder="请输入操作人" style="width: 150px;" />
@@ -92,6 +105,7 @@ const zones = ref([])
 const allUmbrellas = ref([])
 const selectedIds = ref([])
 const selectedZoneId = ref(null)
+const targetZoneInfo = ref(null)
 
 const assignForm = ref({
   zoneId: null,
@@ -141,6 +155,21 @@ const loadUmbrellas = async () => {
 const handleZoneClick = (data) => {
   selectedZoneId.value = data.id
   selectedIds.value = []
+}
+
+const handleTargetZoneChange = (zoneId) => {
+  const zone = zones.value.find(z => z.id === zoneId)
+  if (zone) {
+    targetZoneInfo.value = {
+      id: zone.id,
+      zoneName: zone.zoneName,
+      capacity: zone.capacity,
+      umbrellaCount: zone.umbrellaCount || 0,
+      remainingCapacity: zone.capacity ? zone.capacity - (zone.umbrellaCount || 0) : null
+    }
+  } else {
+    targetZoneInfo.value = null
+  }
 }
 
 const handleSelectionChange = (val) => {
@@ -250,6 +279,37 @@ onMounted(() => {
   background: #f5f5f5;
   padding: 2px 8px;
   border-radius: 10px;
+}
+
+.capacity-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.capacity-count {
+  color: #666;
+  font-size: 12px;
+  background: #f0f9ff;
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.capacity-count.warning {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.capacity-status {
+  margin-right: 10px;
+}
+
+.capacity-detail {
+  font-size: 13px;
+  color: #666;
+  padding: 5px 10px;
+  background: #fafafa;
+  border-radius: 4px;
 }
 
 .assign-footer {
